@@ -146,12 +146,13 @@ try {
 
     case 'tools': {
       const toolkit = args[0];
-      const limit = parseInt(args[1]) || 20;
+      const limit = parseInt(args[1]) || 200;
       if (!toolkit) { console.error('Usage: composio-sdk.js tools <toolkit> [n]'); process.exit(1); }
       const session = await composio.createSession({});
-      const r = await session.tools.getRawComposioTools({ toolkits: [toolkit] });
-      const items = (r || []).slice(0, limit);
+      const r = await session.tools.getRawComposioTools({ toolkits: [toolkit], limit });
+      const items = Array.isArray(r) ? r : (r.items || []);
       for (const t of items) console.log(`${t.slug}\t${t.name}`);
+      console.log(`(total: ${items.length})`);
       break;
     }
 
@@ -179,7 +180,7 @@ try {
 Usage:
   composio-sdk.js whoami                  Test connection
   composio-sdk.js toolkits [limit]       List toolkits (default 10)
-  composio-sdk.js tools <toolkit> [n]    List tools for one toolkit
+  composio-sdk.js tools <toolkit> [n]    List tools for one toolkit (default 200)
   composio-sdk.js search "<query>"       Search tools by use case
   composio-sdk.js connections            List connected accounts
 `);
@@ -299,6 +300,10 @@ npm install @composio/core
 ### "Failed to parse toolkit list query: The parameter should be a object"
 
 This is a known SDK quirk — the shim works around it by wrapping params in `{ data: {...} }`. If you write your own code, mirror the shim's pattern.
+
+### "My toolkit only shows 20 tools but the dashboard says it has 165"
+
+If you're running an older version of the shim (before this fix), the `tools` command defaulted to a limit of 20 — which silently truncated large toolkits like `discordbot`. Update your shim by re-running step 3c (re-copy the script) or pass an explicit limit: `~/bin/composio-sdk tools discordbot 200`. The current shim in this guide defaults to 200 to avoid this.
 
 ### "Connection refused" or "ETXTBSY" when running the official CLI
 
